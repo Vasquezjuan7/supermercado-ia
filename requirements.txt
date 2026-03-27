@@ -1,7 +1,5 @@
-setuptools
 flask
 flask-cors
 ultralytics
 opencv-python-headless
 numpy
-gunicorn
