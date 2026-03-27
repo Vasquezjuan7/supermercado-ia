@@ -6,29 +6,27 @@ import numpy as np
 import os
 
 app = Flask(__name__)
-CORS(app) 
+# Permitimos CORS para que Vercel pueda conectar sin problemas
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Load the nano model (lightweight for Render)
-model = YOLO('yolov8n.pt') 
+# 1. Cargamos el modelo (se descargará automáticamente)
+model = YOLO('yolov8n.pt')
 
-# DICCIONARIO DE TRADUCCIÓN Y CATEGORIZACIÓN
-# Aquí mapeamos lo que YOLO detecta a lo que tu supermercado necesita
+# 2. Tu diccionario de supermercado UCC
 SMART_MAPPING = {
-    "bottle": "Soda / Water",
-    "cup": "Milk Carton",
     "apple": "Fresh Apple",
-    "orange": "Fresh Orange",
+    "orange": "Orange",
     "banana": "Banana",
-    "broccoli": "Vegetables",
+    "bottle": "Soda / Water",
+    "cup": "Milk Box",
     "box": "Snacks Box",
-    "handbag": "Shopping Bag",
-    "person": "Customer (Wait)",
-    "cell phone": "Digital Payment"
+    "sandwich": "Prepared Food"
 }
 
-@app.route('/detect', methods=['POST']) # Cambiado a /detect
+@app.route('/detect', methods=['POST'])
 def detect():
     try:
+        # Verificamos si hay imagen
         if 'image' not in request.files:
             return jsonify({"error": "No image provided"}), 400
         
@@ -36,28 +34,29 @@ def detect():
         img_bytes = np.frombuffer(file.read(), np.uint8)
         img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
 
-        # Resize to 320x320 to avoid Render's Out of Memory (Status 137)
-        img = cv2.resize(img, (320, 320))
+        # 3. Predicción con YOLO (Ahora con resolución completaimgs)
+        # imgsz=640 es el estándar y tenemos RAM para procesarlo
+        results = model.predict(img, conf=0.25, imgsz=640)
         
-        results = model.predict(img, conf=0.25)
+        # Obtenemos las etiquetas de YOLO
+        labels = [model.names[int(c)] for r in results for c in r.boxes.cls]
         
-        # Obtenemos la etiqueta original de YOLO
-        raw_labels = [model.names[int(c)] for r in results for c in r.boxes.cls]
-        
-        if not raw_labels:
+        if not labels:
             return jsonify({"product": "unknown"})
 
-        # Aplicamos la traducción/mapeo al primer objeto detectado
-        detected_raw = raw_labels[0]
-        translated_product = SMART_MAPPING.get(detected_raw, detected_raw.capitalize())
-        
-        return jsonify({"product": translated_product})
+        # Mapeamos la primera detección
+        detected = labels[0]
+        final_name = SMART_MAPPING.get(detected, detected.capitalize())
+
+        return jsonify({"product": final_name})
 
     except Exception as e:
-        print(f"SERVER ERROR: {str(e)}")
-        return jsonify({"error": "Internal Server Error"}), 500
+        # Registramos el error en los logs de Hugging Face
+        print(f"ERROR: {str(e)}")
+        return jsonify({"error": "IA Server error"}), 500
 
 if __name__ == '__main__':
-    # Render uses the PORT environment variable
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    # Hugging Face usa el puerto 7860 por defecto
+    port = int(os.environ.get("PORT", 7860))
+    # Importante: host='0.0.0.0' para que el contenedor escuche
+    app.run(host='0.0.0.0', port=port, debug=False)
