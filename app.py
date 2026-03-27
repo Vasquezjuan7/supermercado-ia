@@ -8,6 +8,7 @@ import os
 app = Flask(__name__)
 CORS(app) 
 
+# Cargamos el modelo Nano (pesa solo 6MB, ideal para Render)
 model = YOLO('yolov8n.pt') 
 
 @app.route('/detectar', methods=['POST'])
@@ -19,7 +20,9 @@ def detectar():
     img_bytes = np.frombuffer(file.read(), np.uint8)
     img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
 
-    results = model.predict(img, conf=0.25)
+    # Optimizamos la imagen para que Render no se quede sin RAM
+    img_resized = cv2.resize(img, (320, 320))
+    results = model.predict(img_resized, conf=0.25)
     
     detectados = []
     for r in results:
@@ -30,4 +33,6 @@ def detectar():
     return jsonify({"producto": nombre_detectado})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=7860)
+    # Puerto dinámico para Render
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
