@@ -41,11 +41,15 @@ def detect():
         img_bytes = np.frombuffer(file.read(), np.uint8)
         img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
 
-        # Run YOLO prediction at standard 640px resolution
-        results = model.predict(img, conf=0.25, imgsz=640)
+        # Run YOLO prediction at reduced resolution (320px) to save RAM on Render
+        results = model.predict(img, conf=0.25, imgsz=320, verbose=False)
         
         # Extract detected class labels
         labels = [model.names[int(c)] for r in results for c in r.boxes.cls]
+        
+        # Free memory explicitly after prediction
+        import gc
+        gc.collect()
         
         if not labels:
             return jsonify({"product": "unknown"})
