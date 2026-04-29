@@ -1,25 +1,26 @@
-# Usa una imagen oficial de Python ligera
+# Use an official Python runtime as a parent image
 FROM python:3.10-slim
 
-# Crea y usa un directorio de trabajo
+# Set the working directory in the container
 WORKDIR /app
 
-# Instala dependencias del sistema necesarias para OpenCV
-# (Este es el truco para que OpenCV no falle en la nube)
+# Install system dependencies for OpenCV and YOLO
 RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia el requirements.txt e instala las dependencias de Python
+# Copy the requirements file into the container
 COPY requirements.txt .
+
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia el resto del código
+# Copy the rest of the application code
 COPY . .
 
-# Expone el puerto por defecto de HF Spaces
-EXPOSE 7860
+# Expose the port (Railway uses PORT environment variable)
+EXPOSE 8080
 
-# Comando para ejecutar la aplicación con Gunicorn (más estable en la nube)
-CMD ["gunicorn", "--bind", "0.0.0.0:7860", "app:app"]
+# Command to run the application using Gunicorn for production
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "--timeout", "0", "app:app"]
