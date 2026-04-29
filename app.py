@@ -41,24 +41,29 @@ def detect():
         img_bytes = np.frombuffer(file.read(), np.uint8)
         img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
 
-        # Run YOLO prediction at reduced resolution (320px) to save RAM on Render
-        results = model.predict(img, conf=0.25, imgsz=320, verbose=False)
+        # Inference with 60% confidence threshold
+        results = model.predict(source=img, conf=0.6, save=False)
         
-        # Extract detected class labels
-        labels = [model.names[int(c)] for r in results for c in r.boxes.cls]
+        # Check if we have detections
+        if not results or len(results[0].boxes) == 0:
+            return jsonify({"product": "unknown", "confidence": 0})
         
         # Free memory explicitly after prediction
         import gc
         gc.collect()
         
-        if not labels:
-            return jsonify({"product": "unknown"})
+        # Get top prediction
+        box = results[0].boxes[0]
+        detected_class = model.names[int(box.cls[0])]
+        confidence = float(box.conf[0])
+        
+        final_name = SMART_MAPPING.get(detected_class, detected_class)
 
-        # Map the first detection to a friendly name
-        detected = labels[0]
-        final_name = SMART_MAPPING.get(detected, detected.capitalize())
-
-        return jsonify({"product": final_name})
+        print(f"✅ Detected: {final_name} ({confidence:.2f})")
+        return jsonify({
+            "product": final_name,
+            "confidence": confidence
+        })
 
     except Exception as e:
         # Return the actual error to the frontend for diagnosis
