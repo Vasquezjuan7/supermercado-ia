@@ -21,6 +21,5 @@ COPY . .
 # Expone el puerto por defecto de HF Spaces
 EXPOSE 7860
 
-# Comando para ejecutar la aplicación
-# (Ya no usamos gunicorn, Flask en HF es directo)
-CMD ["python", "app.py"]
+# Comando para ejecutar la aplicación con Gunicorn (más estable en la nube)
+CMD ["gunicorn", "--bind", "0.0.0.0:7860", "app:app"]
