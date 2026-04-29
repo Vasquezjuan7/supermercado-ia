@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install system dependencies for OpenCV and YOLO
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,4 +23,5 @@ COPY . .
 EXPOSE 8080
 
 # Command to run the application using Gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "8", "--timeout", "0", "app:app"]
+# Workers reduced to 1 to stay within memory limits
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "4", "--timeout", "0", "app:app"]
