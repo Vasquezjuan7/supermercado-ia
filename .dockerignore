@@ -1,0 +1,13 @@
+datasets/
+runs/
+__pycache__/
+*.mp4
+*.jpg
+*.png
+.git
+.github
+venv/
+env/
+.env
+*.pt
+!runs/detect/yolo_control/weights/best.pt
