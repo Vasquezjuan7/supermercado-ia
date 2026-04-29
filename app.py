@@ -6,8 +6,19 @@ import numpy as np
 import os
 
 app = Flask(__name__)
-# Allow CORS so the Vercel frontend can connect without issues
-CORS(app, resources={r"/*": {"origins": "*"}})
+# Aggressive CORS configuration
+CORS(app, resources={r"/*": {
+    "origins": "*",
+    "methods": ["GET", "POST", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization"]
+}})
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 # Load the custom model trained locally with Roboflow annotations
 model = YOLO('runs/detect/yolo_control/weights/best.pt')
