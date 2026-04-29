@@ -57,9 +57,13 @@ def detect():
         return jsonify({"product": final_name})
 
     except Exception as e:
-        # Log the error for debugging
-        print(f"ERROR: {str(e)}")
-        return jsonify({"error": "AI Server error"}), 500
+        # Return the actual error to the frontend for diagnosis
+        error_msg = str(e)
+        print(f"🔥 ERROR CRÍTICO IA: {error_msg}")
+        return jsonify({
+            "error": "AI Server error",
+            "details": error_msg
+        }), 500
 
 if __name__ == '__main__':
     # Use port 7860 by default (Hugging Face Spaces standard)
