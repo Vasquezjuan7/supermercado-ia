@@ -3,37 +3,55 @@ from flask_cors import CORS
 from ultralytics import YOLO
 import cv2
 import numpy as np
+import os
 
 app = Flask(__name__)
-CORS(app) # Permite que React (5173) le hable a Python (5000)
+# Allow CORS so the Vercel frontend can connect without issues
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Cargamos el modelo YOLOv8 (se descargará solo la primera vez)
-model = YOLO('yolov8n.pt') 
+# Load the custom model trained locally with Roboflow annotations
+model = YOLO('runs/detect/yolo_control/weights/best.pt')
 
-@app.route('/detectar', methods=['POST'])
-def detectar():
-    if 'image' not in request.files:
-        return jsonify({"error": "No hay imagen"}), 400
-    
-    # Leer la imagen enviada por React
-    file = request.files['image']
-    img_bytes = np.frombuffer(file.read(), np.uint8)
-    img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
+# Smart mapping: maps YOLO class names to friendly inventory names
+SMART_MAPPING = {
+    "Atun": "Tuna",
+    "Deo Pies": "Foot Deodorant",
+    "Maiz en lata": "Canned Corn"
+}
 
-    # YOLO analiza la imagen
-    results = model.predict(img)
-    
-    # Extraer el nombre del objeto detectado (ej: "apple")
-    detectados = []
-    for r in results:
-        for c in r.boxes.cls:
-            detectados.append(model.names[int(c)])
+@app.route('/detect', methods=['POST'])
+def detect():
+    try:
+        # Check if an image was provided in the request
+        if 'image' not in request.files:
+            return jsonify({"error": "No image provided"}), 400
+        
+        file = request.files['image']
+        img_bytes = np.frombuffer(file.read(), np.uint8)
+        img = cv2.imdecode(img_bytes, cv2.IMREAD_COLOR)
 
-    # Devolvemos el primer objeto que encontró
-    nombre_detectado = detectados[0] if detectados else "unknown"
-    return jsonify({"producto": nombre_detectado})
+        # Run YOLO prediction at standard 640px resolution
+        results = model.predict(img, conf=0.25, imgsz=640)
+        
+        # Extract detected class labels
+        labels = [model.names[int(c)] for r in results for c in r.boxes.cls]
+        
+        if not labels:
+            return jsonify({"product": "unknown"})
+
+        # Map the first detection to a friendly name
+        detected = labels[0]
+        final_name = SMART_MAPPING.get(detected, detected.capitalize())
+
+        return jsonify({"product": final_name})
+
+    except Exception as e:
+        # Log the error for debugging
+        print(f"ERROR: {str(e)}")
+        return jsonify({"error": "AI Server error"}), 500
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
-
-    
+    # Use port 7860 by default (Hugging Face Spaces standard)
+    port = int(os.environ.get("PORT", 7860))
+    # host='0.0.0.0' required so the container accepts external connections
+    app.run(host='0.0.0.0', port=port, debug=False)
