@@ -1,26 +1,27 @@
-# Use an official Python runtime as a parent image
+# Usamos una imagen de Python base
 FROM python:3.10-slim
 
-# Set the working directory in the container
+# Directorio de trabajo
 WORKDIR /app
 
-# Install system dependencies for OpenCV and YOLO
+# Dependencias del sistema para OpenCV y YOLO
 RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies (forced CPU version to save space)
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# --- CAMBIO CLAVE PARA AWS GPU ---
+# Instalamos la versión de Torch que soporta CUDA (GPU)
+# Ya no usamos el link de /cpu
+RUN pip install --no-cache-dir torch torchvision torchaudio
 RUN pip install --no-cache-dir ultralytics flask flask-cors gunicorn opencv-python-headless
 
-
-# Copy the rest of the application code
+# Copiamos el código
 COPY . .
 
-# Expose the port (Railway uses PORT environment variable)
+# Exponemos el puerto
 EXPOSE 8080
 
-# Command to run the application using Gunicorn for production
-# Workers reduced to 1 to stay within memory limits
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "1", "--threads", "4", "--timeout", "0", "app:app"]
+# Comando para producción con Gunicorn
+# Nota: Quitamos el límite de memoria para que AWS use toda su potencia
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--threads", "4", "--timeout", "0", "app:app"]
