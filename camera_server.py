@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 """
 UCC Vision Pro - Camera PUSHER (Enterprise Version)
 Captura frames y los sube a AWS mediante POST.
@@ -11,9 +11,9 @@ import requests
 import io
 
 # -- Configuracion --
-AWS_BACKEND_URL = 'http://18.219.0.19:8081/api/camera/upload'
-AI_SERVICE_URL = 'http://18.219.0.19:8080/detect_all'
-DB_API_URL = 'http://18.219.0.19:8081/api/products'
+AWS_BACKEND_URL = 'http://52.14.226.191:8081/api/camera/upload'
+AI_SERVICE_URL = 'http://52.14.226.191:8080/detect_all'
+DB_API_URL = 'http://52.14.226.191:8081/api/products'
 
 # -- Estado global --
 latest_frame = None

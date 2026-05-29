@@ -7,10 +7,13 @@ IA_SERVICE = os.path.dirname(os.path.abspath(__file__))
 
 # 1. Find the Roboflow zip in Downloads
 zip_file = None
+zips = []
 for f in os.listdir(DOWNLOADS):
     if f.startswith("Supermarket") and f.endswith(".zip"):
-        zip_file = os.path.join(DOWNLOADS, f)
-        break
+        zips.append(os.path.join(DOWNLOADS, f))
+
+if zips:
+    zip_file = max(zips, key=os.path.getmtime)
 
 if not zip_file:
     print("[!] Could not find the Roboflow ZIP file in Downloads.")

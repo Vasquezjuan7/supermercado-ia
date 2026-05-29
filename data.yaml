@@ -1,6 +1,21 @@
-path: C:/Users/juanv/OneDrive/Documentos/PROYECTO_SUPERMERCADO/ia-service/dataset
 train: train/images
-val: val/images
-
-nc: 3
-names: ['Atun', 'Deo Pies', 'Maiz en lata']
+val: train/images
+nc: 10
+names:
+- Atun
+- Crema de cuerpo
+- Deo Pies
+- Gelatinas
+- Harina pancakes
+- Jabon de cuerpo
+- Maiz en lata
+- Mermelada de Pina
+- Monster
+- Nucita
+roboflow:
+  workspace: juans-workspace-k2ozz
+  project: supermarket-zmzfm
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/juans-workspace-k2ozz/supermarket-zmzfm/dataset/2
+path: C:\Users\juanv\OneDrive\Documentos\PROYECTO_SUPERMERCADO\ia-service\dataset
